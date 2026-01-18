@@ -21,3 +21,10 @@ create table bookings(
     booking_time timestamp default current_timestamp,
     CONSTRAINT fk_booking_seat FOREIGN KEY (seat_id) REFERENCES seats(id)
 );
+
+create table users (
+    id number generated always as identity primary key,
+    name varchar2(100) not null,
+    email varchar2(100) not null unique,
+    balance number default 0
+);
