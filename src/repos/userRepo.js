@@ -28,19 +28,18 @@ const chargeUser = async (connection, email, amount) => {
         return result.rowsAffected;
     } catch (err) {
         throw err;
-    } finally {
-        if (connection) await connection.close();
-    }
+    } 
 }
 
 const findUserForUpdate = async (connection, email) => {
     try {
 
         const result = await connection.execute(
-            `SELECT * FROM users WHERE email = :email FOR UPDATE`,//FOR UPDATE
-            [email],
+            `SELECT * FROM users WHERE email = :email FOR UPDATE`,
+            { email },
             { outFormat: oracledb.OUT_FORMAT_OBJECT }
         );
+
         return result.rows[0];
     } catch (err) {
         throw err;
