@@ -3,6 +3,7 @@ const app = express();
 const { initializeDB } = require('./config/db');
 const eventRoutes = require("./routes/eventRoutes")
 const bookingRoutes = require("./routes/bookingRoutes")
+const {releaseExpireSeats} = require("./repos/bookingRepo")
 
 const port = process.env.PORT || 3000;
 app.use(express.json());
@@ -22,4 +23,6 @@ async function start() {
     })
 }
 
-start();
+start().then(() => {
+    setInterval(releaseExpireSeats,10*1000);
+})    

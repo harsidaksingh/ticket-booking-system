@@ -44,6 +44,13 @@ const createBooking = async (eventId, seatId, userEmail) => {
     }
 }
 
+const reserveSeat = async (seatId, userId) => {
+    // 1. Validation Logic could go here (e.g., is seatId valid?)
+    await bookingRepo.reserveSeat(seatId, userId);
+    console.log(`✅ Seat ${seatId} reserved for ${userId}`);
+}
+
 module.exports = {
-    createBooking // Keeping it simple
+    createBooking,
+    reserveSeat
 };
