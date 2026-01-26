@@ -14,7 +14,19 @@ const getAllEvents = async (req, res) => {
     }
 }
 
+const getSeats = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const seats = await eventService.getSeatsForEvent(id);
+        return res.status(200).json({ seats });
+    } catch (error) {
+        console.error(`Error in getSeats: ${error}`);
+        return res.status(500).json({ error: error.message });
+    }
+}
+
 module.exports = {
-    getAllEvents
+    getAllEvents,
+    getSeats
 }
 

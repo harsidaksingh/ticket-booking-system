@@ -4,6 +4,7 @@ const { initializeDB } = require('./config/db');
 const eventRoutes = require("./routes/eventRoutes")
 const bookingRoutes = require("./routes/bookingRoutes")
 const {releaseExpireSeats} = require("./repos/bookingRepo")
+const { connectRedis } = require('./config/redis');
 
 const port = process.env.PORT || 3000;
 app.use(express.json());
@@ -21,6 +22,7 @@ async function start() {
     app.listen(port, () => {
         console.log(`Server running on port ${port}`);
     })
+    await connectRedis();
 }
 
 start().then(() => {

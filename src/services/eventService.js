@@ -5,6 +5,10 @@ const getEvent = async () => {
     return events;
 }
 
+const getSeatsForEvent = async (eventId) => {
+    const seats = await eventRepo.getEventSeats(eventId);
+    return seats;
+}
 module.exports = {
-    getEvent
+    getEvent,getSeatsForEvent
 }

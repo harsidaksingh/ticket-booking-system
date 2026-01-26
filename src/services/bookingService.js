@@ -44,9 +44,9 @@ const createBooking = async (eventId, seatId, userEmail) => {
     }
 }
 
-const reserveSeat = async (seatId, userId) => {
+const reserveSeat = async (eventId,seatId, userId) => {
     // 1. Validation Logic could go here (e.g., is seatId valid?)
-    await bookingRepo.reserveSeat(seatId, userId);
+    await bookingRepo.reserveSeat(eventId,seatId, userId);
     console.log(`✅ Seat ${seatId} reserved for ${userId}`);
 }
 

@@ -23,11 +23,11 @@ const createBooking = async (req, res) => {
 
 const reserve = async (req, res) => {
     try {
-        const { seatId, userId } = req.body;
-        if (!seatId || !userId) {
+        const { eventId,seatId, userId } = req.body;
+        if (!eventId || !seatId || !userId) {
             return res.status(400).json({ message: "Missing seatId or userId" });
         }
-        await bookingService.reserveSeat(seatId, userId);
+        await bookingService.reserveSeat(eventId,seatId, userId);
         return res.status(200).json({ message: "Reserved!" });
     } catch (error) {
         console.error("Reserve Error:", error);
