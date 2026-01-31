@@ -1,4 +1,5 @@
 const bookingService = require("../services/bookingService")
+const mqService = require("../config/rabbitmq");
 
 const createBooking = async (req, res) => {
     try {
@@ -10,8 +11,12 @@ const createBooking = async (req, res) => {
             })
         }
 
-        await bookingService.createBooking(eventId, seatId, userEmail);
-        return res.status(201).json({ message: 'Booked!' });
+        // await bookingService.createBooking(eventId, seatId, userEmail);
+        await mqService.publishToQueue({eventId,seatId,userEmail});
+        return res.status(202).json({ 
+            message: 'Request Accepted. Processing...',
+            status: 'PENDING' 
+        });
 
     } catch (error) {
         console.error(`Error in Booking controller ${error}`);
@@ -25,7 +30,7 @@ const reserve = async (req, res) => {
     try {
         const { eventId,seatId, userId } = req.body;
         if (!eventId || !seatId || !userId) {
-            return res.status(400).json({ message: "Missing seatId or userId" });
+            return res.status(400).json({ message: "Invalid Request" });
         }
         await bookingService.reserveSeat(eventId,seatId, userId);
         return res.status(200).json({ message: "Reserved!" });
