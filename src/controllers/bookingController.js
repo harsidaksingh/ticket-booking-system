@@ -1,5 +1,6 @@
 const bookingService = require("../services/bookingService")
 const mqService = require("../config/rabbitmq");
+const { getClient } = require('../config/redis');
 
 const createBooking = async (req, res) => {
     try {
@@ -10,12 +11,15 @@ const createBooking = async (req, res) => {
                 message: "Invalid Request"
             })
         }
+        const client = getClient();
+        const reqId = crypto.randomUUID();
 
-        // await bookingService.createBooking(eventId, seatId, userEmail);
-        await mqService.publishToQueue({eventId,seatId,userEmail});
+        await client.set("booking:"+reqId,"PENDING");
+        await mqService.publishToQueue({eventId,seatId,userEmail,reqId});
         return res.status(202).json({ 
             message: 'Request Accepted. Processing...',
-            status: 'PENDING' 
+            status: 'PENDING' ,
+            reqId: reqId
         });
 
     } catch (error) {
@@ -40,7 +44,21 @@ const reserve = async (req, res) => {
     }
 }
 
+const getBookingStatus = async (req, res) => {
+    try {
+        const { reqId } = req.params;
+        if (!reqId) return res.status(400).json({ message: "Missing Request ID" });
+        const client = getClient();
+        const status = await client.get(`booking:${reqId}`);
+        if (!status) return res.status(404).json({ message: "Booking Request Not Found" });
+        return res.status(200).json({ reqId, status });
+    } catch (error) {
+        console.error("Status Check Error:", error);
+        return res.status(500).json({ error: error.message });
+    }
+}
+
 module.exports = {
-    createBooking,reserve
+    createBooking,reserve,getBookingStatus
   
 }
