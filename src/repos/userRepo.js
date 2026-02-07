@@ -1,21 +1,15 @@
 const oracledb = require('oracledb');
 
-const findUser = async (email) => {
-    let connection;
-    try {
-        connection = await oracledb.getConnection('oracleDB');
-        const result = await connection.execute(
-            `SELECT * FROM users WHERE email = :email`,
-            [email],
-            { outFormat: oracledb.OUT_FORMAT_OBJECT }
-        );
-        return result.rows[0];
-    } catch (err) {
-        throw err;
-    } finally {
-        if (connection) await connection.close();
-    }
-}
+const findUserByEmail = async (connection, email) => {
+    // Note: We need PASSWORD now, so update SELECT query
+    const sql = `SELECT * FROM users WHERE email = :email`;
+    const result = await connection.execute(sql, [email], { outFormat: oracledb.OUT_FORMAT_OBJECT });
+    return result.rows[0];
+};
+const createUser = async (connection, name, email, hashedPassword) => {
+    const sql = `INSERT INTO users (name, email, password, balance) VALUES (:name, :email, :password, 1000)`;
+    await connection.execute(sql, { name, email, password: hashedPassword });
+};
 
 const chargeUser = async (connection, email, amount) => {
 
@@ -46,4 +40,4 @@ const findUserForUpdate = async (connection, email) => {
     }
 }
 
-module.exports = { findUser, chargeUser, findUserForUpdate };
+module.exports = { findUserByEmail,createUser, chargeUser, findUserForUpdate };
