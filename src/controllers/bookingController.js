@@ -1,11 +1,12 @@
 const bookingService = require("../services/bookingService")
 const mqService = require("../config/rabbitmq");
 const { getClient } = require('../config/redis');
+const crypto = require("crypto")
 
 const createBooking = async (req, res) => {
     try {
-        const { eventId, seatId, userEmail } = req.body;
-
+        const { eventId, seatId } = req.body;
+        const userEmail = req.user.email;
         if (!eventId || !seatId || !userEmail) {
             return res.status(400).json({
                 message: "Invalid Request"

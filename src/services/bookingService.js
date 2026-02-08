@@ -22,7 +22,9 @@ const createBooking = async (eventId, seatId, userEmail) => {
 
       
         const seat = await bookingRepo.getSeat(seatId);
-        if (!seat || seat.STATUS !== 0) throw new Error("Seat already taken or invalid");
+        console.log(`[DEBUG] Booking Check: Seat=${seatId}, Status=${seat.STATUS}, HoldID=${seat.HOLD_ID}, User=${userEmail}`);
+        const isAvailable = seat.STATUS === 0 || (seat.STATUS === 1 && seat.HOLD_ID === userEmail);
+        if (!seat || !isAvailable) throw new Error("Seat already taken or invalid");
 
       
         await bookingRepo.updateSeatWithVersion(connection, eventId, seatId, userEmail, seat.VERSION);
@@ -32,7 +34,7 @@ const createBooking = async (eventId, seatId, userEmail) => {
         console.log(`✅ Success: Seat ${seatId} booked for ${userEmail}`);
 
     } catch (error) {
-        if (connection) await connection.rollback(); // Undo everything if ANY step fails
+        if (connection) await connection.rollback(); 
         console.error(`❌ Booking Failed: ${error.message}`);
         throw error;
     } finally {

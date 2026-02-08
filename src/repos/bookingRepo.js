@@ -2,9 +2,9 @@ const oracledb = require('oracledb')
 const { getClient } = require('../config/redis');
 const bookQuery = `insert into bookings (event_id,seat_id,user_email) values(:eventId,:seatId,:userEmail) RETURNING id INTO :id`
 const getSeatQuery = `select * from seats where id = :seatId`
-const updateSeatQueryWithVersion = `update seats set status=2, version=version+1 where id = :seatId and status = 0 and version = :version`
+const updateSeatQueryWithVersion = `update seats set status=2, version=version+1 where id = :seatId and status IN (0,1) and version = :version`
 const reserveQuery = `update seats set status = 1,hold_id=:userId,expires_at= SYSDATE+interval '4' minute where id=:seatId and status = 0`
-const releaseQuery = `UPDATE seats SET status = 0, hold_id = NULL, expires_at = NULL WHERE status = 1 AND expires_at < SYSDATE RETURNING event_id INTO :event_ids`
+const releaseQuery = `UPDATE seats SET status = 0, hold_id = NULL, expires_at = NULL,version=version+1 WHERE status = 1 AND expires_at < SYSDATE RETURNING event_id INTO :event_ids`
 
 const getSeat = async (seatId) => {
     let connection;
