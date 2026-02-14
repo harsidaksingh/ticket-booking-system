@@ -1,4 +1,5 @@
 const {getClient} = require("../config/redis")
+const logger = require('../config/logger');
 
 const rateLimiter = async (req,res,next) => {
     try{
@@ -19,7 +20,7 @@ const rateLimiter = async (req,res,next) => {
         }
         
     }catch(error){
-        console.error(`Error in rateLimiter ${error}`);
+        logger.error(`Error in rateLimiter ${error}`);
         return res.status(500).json({
             error: error.message
         })

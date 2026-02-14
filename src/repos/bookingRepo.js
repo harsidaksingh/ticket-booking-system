@@ -1,5 +1,7 @@
 const oracledb = require('oracledb')
 const { getClient } = require('../config/redis');
+const logger = require('../config/logger');
+const AppError = require('../utils/AppError');
 const bookQuery = `insert into bookings (event_id,seat_id,user_email) values(:eventId,:seatId,:userEmail) RETURNING id INTO :id`
 const getSeatQuery = `select * from seats where id = :seatId`
 const updateSeatQueryWithVersion = `update seats set status=2, version=version+1 where id = :seatId and status IN (0,1) and version = :version`
@@ -13,12 +15,12 @@ const getSeat = async (seatId) => {
         const res = await connection.execute(getSeatQuery, { seatId }, { outFormat: oracledb.OUT_FORMAT_OBJECT })
         return res.rows[0];
     } catch (error) {
-        console.error(`Error in bookingRepo ${error}`);
+        logger.error(`Error in bookingRepo ${error}`);
         throw error;
     } finally {
         if (connection) {
             await connection.close();
-            console.log("Connection closed")
+            // logger.info("Connection closed") // Optional: reduce noise
         }
     }
 }
@@ -27,16 +29,16 @@ const updateSeatWithVersion = async (connection, eventId, seatId, userEmail, ver
     try {
         const seatRes = await connection.execute(updateSeatQueryWithVersion, { seatId, version }, { autoCommit: false })
         if (seatRes.rowsAffected === 0) {
-            console.warn("Seat Already taken")
-            throw ("Seat Taken");
+            logger.warn("Seat Already taken")
+            throw new AppError("Seat Already Taken", 409);
         }
         await connection.execute(bookQuery,
             { eventId, seatId, userEmail, id: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT } },
             { autoCommit: false });
         await invalidateCache(eventId);
-        console.log("Booking query executed");
+        logger.info("Booking query executed");
     } catch (error) {
-        console.error(`Error in bookingRepo ${error}`);
+        logger.error(`Error in bookingRepo ${error}`);
         throw error;
     }
 }
@@ -47,16 +49,16 @@ const reserveSeat = async (eventId,seatId,userId) => {
         connection = await oracledb.getConnection('oracleDB');
         const res = await connection.execute(reserveQuery,{seatId,userId},{autoCommit:true})
         if (res.rowsAffected === 0) {
-            console.warn("Seat Already taken")
-            throw ("Seat Taken");
+            logger.warn("Seat Already taken")
+            throw new AppError("Seat Already Taken", 409);
         }
         await invalidateCache(eventId);
     }catch(error){
-        console.error(`Error in reserve seat ${error}`);
+        logger.error(`Error in reserve seat ${error}`);
         throw error;
     }finally{
         await connection.close();
-        console.log("connection closed")
+        // logger.info("connection closed")
     }
 
 }
@@ -74,10 +76,10 @@ const releaseExpireSeats = async () => {
             for(const eid of uniqueEvents){
                 await invalidateCache(eid);
             } 
-            console.log(`♻️ Released ${res.rowsAffected} seats. Invalidated ${uniqueEvents.length} events.`);
+            logger.info(`♻️ Released ${res.rowsAffected} seats. Invalidated ${uniqueEvents.length} events.`);
         }    
     }catch(error){
-        console.error(`Error in release seat ${error}`);
+        logger.error(`Error in release seat ${error}`);
         throw error;
     }finally{
         await connection.close();
@@ -89,9 +91,9 @@ const invalidateCache = async (eventId) => {
     if (!client) return; 
     try {
         await client.del(`seats:event:${eventId}`);
-        console.log(`🗑️ Invalidated Cache for Event ${eventId}`);
+        logger.info(`🗑️ Invalidated Cache for Event ${eventId}`);
     } catch (e) {
-        console.error('Redis Invalidation Failed', e);
+        logger.error('Redis Invalidation Failed', e);
     }
 }
 

@@ -4,8 +4,11 @@ const bookingController = require("../controllers/bookingController")
 const rateLimiter = require("../middleware/rateLimiter")
 const authToken = require("../middleware/authToken")
 
-router.post('/',authToken, rateLimiter,bookingController.createBooking);
-router.post('/reserve',bookingController.reserve);
+const validate = require('../middleware/validate');
+const { bookingSchema, reserveSchema } = require('../utils/validationSchemas');
+
+router.post('/', authToken, rateLimiter, validate(bookingSchema), bookingController.createBooking);
+router.post('/reserve', validate(reserveSchema), bookingController.reserve);
 router.get('/status/:reqId',bookingController.getBookingStatus)
 
 module.exports = router;

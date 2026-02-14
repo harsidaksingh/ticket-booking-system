@@ -2,6 +2,7 @@ const oracledb = require("oracledb")
 const bcrypt = require("bcrypt")
 const userRepo = require("../repos/userRepo")
 const jwt = require("jsonwebtoken")
+const AppError = require('../utils/AppError');
 
 const registerUser = async (name,email,password) => {
     let connection;
@@ -29,6 +30,9 @@ const loginUser = async (email,password) => {
     try{
         connection = await oracledb.getConnection("oracleDB");
         const user = await userRepo.findUserByEmail(connection,email);
+        if(!user){
+             throw new AppError("Invalid Email or Password", 401);
+        }
         const isMatch = await bcrypt.compare(password,user.PASSWORD);
         if(isMatch){
             const payload = {
@@ -38,7 +42,7 @@ const loginUser = async (email,password) => {
             const token = jwt.sign(payload,process.env.JWT_SECRET || "do_not_use_in_prod",{expiresIn:'30min'})
             return token;
         }else{
-            throw new Error("Invalid Password")
+            throw new AppError("Invalid Password", 401);
         }
         
     }catch(error){ 

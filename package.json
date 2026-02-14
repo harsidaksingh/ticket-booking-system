@@ -19,9 +19,11 @@
     "bcrypt": "^6.0.0",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "joi": "^18.0.2",
     "jsonwebtoken": "^9.0.3",
     "oracledb": "^6.10.0",
-    "redis": "^5.10.0"
+    "redis": "^5.10.0",
+    "winston": "^3.19.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"
