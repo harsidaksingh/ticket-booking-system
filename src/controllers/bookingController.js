@@ -1,5 +1,5 @@
 const bookingService = require("../services/bookingService")
-const { getChannel } = require('../config/rabbitmq');
+const { publishToQueue } = require('../config/rabbitmq');
 const { getClient } = require('../config/redis');
 const crypto = require("crypto")
 const logger = require('../config/logger');
@@ -16,9 +16,7 @@ const createBooking = async (req, res) => {
     const reqId = crypto.randomUUID();
 
     await client.set("booking:"+reqId,"PENDING");
-    const channel = getChannel();
-    const message = JSON.stringify({ eventId, seatId, userEmail, reqId });
-    channel.sendToQueue('booking_queue', Buffer.from(message));
+    await publishToQueue({ eventId, seatId, userEmail, reqId });
     logger.info(`RabbitMQ: Sent booking request ${reqId} to queue`);
 
     // 4. Return "Accepted" (202) immediately
