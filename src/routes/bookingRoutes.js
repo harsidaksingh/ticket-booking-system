@@ -8,7 +8,7 @@ const validate = require('../middleware/validate');
 const { bookingSchema, reserveSchema } = require('../utils/validationSchemas');
 
 router.post('/', authToken, rateLimiter, validate(bookingSchema), bookingController.createBooking);
-router.post('/reserve', validate(reserveSchema), bookingController.reserve);
+router.post('/reserve', authToken,validate(reserveSchema), bookingController.reserve);
 router.get('/status/:reqId',bookingController.getBookingStatus)
 
 module.exports = router;

@@ -1,1 +1,80 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global Settings & Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bs-primary: #6366f1; 
+  --bs-primary-rgb: 99, 102, 241;
+  --bs-secondary: #94a3b8; 
+  --bs-success: #10b981; 
+  --bs-danger: #f43f5e; 
+  --bs-warning: #f59e0b; 
+  
+  --bs-body-bg: #0f172a; 
+  --bs-body-color: #f8fafc; 
+  --bs-font-sans-serif: 'Inter', system-ui, -apple-system, sans-serif;
+  
+  --surface-color: #1e293b; 
+  --surface-border: #334155; 
+}
+
+body {
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  font-family: var(--bs-font-sans-serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+.bg-dark { background-color: var(--surface-color) !important; }
+
+.card {
+  background-color: var(--surface-color);
+  border: 1px solid var(--surface-border);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  color: var(--bs-body-color);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.btn-primary {
+  background: linear-gradient(135deg, #6366f1, #4f46e5); 
+  border: none;
+  font-weight: 500;
+  border-radius: 8px;
+  padding: 0.5rem 1.25rem;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.form-control {
+  background-color: var(--bs-body-bg);
+  border: 1px solid var(--surface-border);
+  color: var(--bs-body-color);
+  border-radius: 8px;
+}
+
+/* Skeleton Loader Animation */
+@keyframes pulse-shimmer {
+  0% { opacity: 1; }
+  50% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+.skeleton {
+  background-color: var(--surface-border); /* using the dark theme border color */
+  border-radius: 8px;
+  animation: pulse-shimmer 1.5s ease-in-out infinite;
+}
+.text-muted {
+  color: var(--bs-secondary) !important;
+}
+.form-floating > label {
+  color: var(--bs-secondary) !important;
+}

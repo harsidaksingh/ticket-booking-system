@@ -14,7 +14,8 @@ const getSeatsForEvent = async (eventId) => {
     return seats.map(row => ({
         id:row.ID,
         eventId:row.EVENT_ID,
-        status:row.STATUS
+        status:row.STATUS,
+        seatNumber:row.SEAT_NUMBER
     }));
 }
 module.exports = {

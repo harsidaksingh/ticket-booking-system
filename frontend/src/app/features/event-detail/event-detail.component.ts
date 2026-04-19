@@ -12,31 +12,93 @@ import { AuthService } from '../../core/services/auth.service';
     @if (isLoading) {
       <p class="text-center">Loading Events...</p>
     } @else {
-      <div class="d-flex flex-wrap gap-2">
+      <div class="seat-grid mt-4">
         @for (seat of seats; track seat.id) {
           <button
-            class="btn "
-            [class.btn-danger]="seat.status === 1 || seat.status === 2"
-            [class.btn-warning]="seat.id === selectedSeatId()"
-            [class.btn-success]="
+            class="seat"
+            [class.seat-booked]="seat.status === 1 || seat.status === 2"
+            [class.seat-selected]="seat.id === selectedSeatId()"
+            [class.seat-available]="
               seat.status === 0 && seat.id !== selectedSeatId()
             "
-            [disabled]="seat.status === 1"
+            [disabled]="seat.status === 1 || seat.status === 2"
             (click)="selectSeat(seat.id)"
           >
-            Seat ID: {{ seat.id }}
+            {{ seat.seatNumber }}
           </button>
         }
       </div>
-      <button
-        class="btn btn-primary mt-2"
-        [disabled]="selectedSeatId() === null"
-        (click)="reserve()"
+
+      <div
+        class="fixed-bottom p-3"
+        style="background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(10px); border-top: 1px solid rgba(255,255,255,0.05); z-index: 1030;"
       >
-        Reserve Seat
-      </button>
+        <div
+          class="container d-flex justify-content-between align-items-center"
+        >
+          <div>
+            @if (selectedSeatId() !== null) {
+              <p class="mb-0 text-success fw-bold">
+                Ready to Reserve Seat {{ selectedSeatId() }}!
+              </p>
+            } @else {
+              <p class="mb-0 text-muted">Select a seat to continue</p>
+            }
+          </div>
+
+          <button
+            class="btn btn-primary px-5 py-2"
+            [disabled]="selectedSeatId() === null"
+            (click)="reserve()"
+          >
+            Reserve Seat
+          </button>
+        </div>
+      </div>
     }
   `,
+  styles: [
+    `
+      .seat-grid {
+        display: grid;
+        /* This automatically creates a flexible grid of 50px squares */
+        grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+        gap: 12px;
+        margin-bottom: 80px; /* Leaves space for the reserve button */
+      }
+      .seat {
+        width: 100%;
+        aspect-ratio: 1; /* Forces the button to be a perfect square */
+        border-radius: 8px;
+        border: none;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+      }
+      .seat:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+      }
+      /* Our premium color states */
+      .seat-available {
+        background-color: var(--surface-border);
+        color: var(--bs-body-color);
+      }
+      .seat-selected {
+        background-color: var(--bs-success);
+        color: white;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.4);
+      }
+      .seat-booked {
+        background-color: var(--bs-danger);
+        opacity: 0.5;
+        color: white;
+        cursor: not-allowed;
+      }
+    `,
+  ],
 })
 export class EventDetailComponent implements OnInit {
   private activatedRoute = inject(ActivatedRoute);
