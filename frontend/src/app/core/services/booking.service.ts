@@ -7,17 +7,17 @@ import { inject, Injectable } from '@angular/core';
 export class BookingService {
   private http = inject(HttpClient);
   private bookingUrl = 'http://localhost:3000/bookings';
-  reserve(eventId: number, seatId: number, userId: string) {
+  reserve(eventId: number, seatIds: number[], userId: string) {
     return this.http.post<{ message: string }>(`${this.bookingUrl}/reserve`, {
       eventId,
-      seatId,
+      seatIds,
       userId,
     });
   }
-  confirmBooking(eventId: number, seatId: number) {
+  confirmBooking(eventId: number, seatIds: number[]) {
     return this.http.post<{ message: string; reqId: string; status: string }>(
       `${this.bookingUrl}`,
-      { eventId, seatId },
+      { eventId, seatIds },
     );
   }
   getBookingStatus(reqId: string) {

@@ -44,7 +44,7 @@ import { RouterLink } from '@angular/router';
                 Event ID: <strong>{{ eventId }}</strong>
               </p>
               <p class="fs-5 mb-4">
-                Seat Number: <strong>{{ seatId }}</strong>
+                Seats : <strong>{{ seatIds.join(', ') }}</strong>
               </p>
 
               <div
@@ -86,17 +86,17 @@ export class CheckoutComponent implements OnInit {
   reqId: string = '';
   bookingStatus: string = 'PENDING';
   eventId!: number;
-  seatId!: number;
+  seatIds!: number[];
   ngOnInit() {
     const state = history.state;
     this.eventId = state.eventId;
-    this.seatId = state.seatId;
+    this.seatIds = state.seatIds;
 
     this.confirmBooking();
   }
   confirmBooking() {
     this.bookingStatus = 'PENDING';
-    this.bookingService.confirmBooking(this.eventId, this.seatId).subscribe({
+    this.bookingService.confirmBooking(this.eventId, this.seatIds).subscribe({
       next: (data) => {
         this.reqId = data.reqId;
         interval(2000)

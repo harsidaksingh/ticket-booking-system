@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import {
   ReactiveFormsModule,
@@ -76,7 +76,9 @@ export class LoginComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
   private toastService = inject(ToastService);
+  private activatedRoute = inject(ActivatedRoute);
   errorMessage: string = '';
+  url = this.activatedRoute.snapshot.queryParamMap.get('returnUrl') ?? '/';
 
   loginForm = new FormGroup({
     email: new FormControl('', [Validators.required, Validators.email]),
@@ -95,7 +97,7 @@ export class LoginComponent {
           this.authService.saveToken(token);
           localStorage.setItem('userEmail', email);
           this.toastService.show('Successfully logged in!', 'success');
-          this.router.navigate(['/']);
+          this.router.navigateByUrl(this.url!);
         },
         error: (err) => {
           console.error('Unable to Login', err);

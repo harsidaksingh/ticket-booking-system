@@ -29,3 +29,18 @@ CREATE TABLE users (
     password VARCHAR2(255), 
     balance NUMBER DEFAULT 0
 );
+drop table bookings;
+create table orders(
+    id number  generated always as identity primary key,
+    event_id number not null,
+    user_email varchar2(100),
+    status varchar2(50),
+    booking_time timestamp default current_timestamp
+);
+create table order_items(
+    id number  generated always as identity primary key,
+    order_id number not null,
+    seat_id number not null,
+    constraint fk_order_id FOREIGN Key(order_id) REFERENCES orders(id),
+    CONSTRAINT fk_booking_seat FOREIGN KEY (seat_id) REFERENCES seats(id)
+)

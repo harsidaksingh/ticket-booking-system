@@ -4,6 +4,7 @@ import { EventService } from '../../core/services/event.service';
 import { TicketSeat } from '../../core/models/seat.model';
 import { BookingService } from '../../core/services/booking.service';
 import { AuthService } from '../../core/services/auth.service';
+import { ToastService } from '../../core/services/toast.service';
 
 @Component({
   selector: 'app-eventDetail',
@@ -17,9 +18,9 @@ import { AuthService } from '../../core/services/auth.service';
           <button
             class="seat"
             [class.seat-booked]="seat.status === 1 || seat.status === 2"
-            [class.seat-selected]="seat.id === selectedSeatId()"
+            [class.seat-selected]="selectedSeatId().includes(seat.id)"
             [class.seat-available]="
-              seat.status === 0 && seat.id !== selectedSeatId()
+              seat.status === 0 && !selectedSeatId().includes(seat.id)
             "
             [disabled]="seat.status === 1 || seat.status === 2"
             (click)="selectSeat(seat.id)"
@@ -37,9 +38,9 @@ import { AuthService } from '../../core/services/auth.service';
           class="container d-flex justify-content-between align-items-center"
         >
           <div>
-            @if (selectedSeatId() !== null) {
+            @if (selectedSeatId().length !== 0) {
               <p class="mb-0 text-success fw-bold">
-                Ready to Reserve Seat {{ selectedSeatId() }}!
+                {{ selectedSeatId().length }} seat(s) selected!
               </p>
             } @else {
               <p class="mb-0 text-muted">Select a seat to continue</p>
@@ -48,7 +49,7 @@ import { AuthService } from '../../core/services/auth.service';
 
           <button
             class="btn btn-primary px-5 py-2"
-            [disabled]="selectedSeatId() === null"
+            [disabled]="selectedSeatId().length === 0"
             (click)="reserve()"
           >
             Reserve Seat
@@ -106,9 +107,10 @@ export class EventDetailComponent implements OnInit {
   private bookingService = inject(BookingService);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private toastService = inject(ToastService);
   isLoading: boolean = true;
   seats: TicketSeat[] = [];
-  selectedSeatId = signal<number | null>(null);
+  selectedSeatId = signal<number[]>([]);
   ngOnInit() {
     const id = this.activatedRoute.snapshot.paramMap.get('id');
     this.eventService.getSeats(Number(id)).subscribe({
@@ -123,29 +125,36 @@ export class EventDetailComponent implements OnInit {
     });
   }
   selectSeat(id: number) {
-    if (this.selectedSeatId() === id) {
-      this.selectedSeatId.set(null);
+    if (this.selectedSeatId().includes(id)) {
+      this.selectedSeatId.update((current) =>
+        current.filter((item) => item !== id),
+      );
+    } else if (this.selectedSeatId().length < 10) {
+      this.selectedSeatId.update((current) => [...current, id]);
     } else {
-      this.selectedSeatId.set(id);
+      this.toastService.show('Maximum 10 seats allowed!', 'danger');
     }
   }
   reserve() {
     const eventId = this.activatedRoute.snapshot.paramMap.get('id');
     const userEmail: string = localStorage.getItem('userEmail')!;
     if (!this.authService.isLoggedIn()) {
-      this.router.navigate(['/login']);
+      this.router.navigate(['/login'], {
+        queryParams: { returnUrl: this.router.url },
+      });
       return;
     }
     this.bookingService
-      .reserve(Number(eventId), Number(this.selectedSeatId()!), userEmail)
+      .reserve(Number(eventId), this.selectedSeatId(), userEmail)
       .subscribe({
         next: (data) => {
           this.router.navigate(['/checkout'], {
-            state: { eventId: eventId, seatId: this.selectedSeatId() },
+            state: { eventId: eventId, seatIds: this.selectedSeatId() },
           });
         },
         error: (error) => {
           console.error('Failed to reserve seat:', error);
+          this.toastService.show('Failed to reserve seat', 'danger');
         },
       });
   }
