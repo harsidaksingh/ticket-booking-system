@@ -7,6 +7,7 @@
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
     "worker": "nodemon src/workers/bookingWorker.js",
+    "relay": "nodemon src/workers/outboxRelay.js",
     "test": "jest"
   },
   "keywords": [],
@@ -17,6 +18,7 @@
     "amqplib": "^0.10.9",
     "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",

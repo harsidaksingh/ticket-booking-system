@@ -11,13 +11,11 @@ export class AuthService {
   private router = inject(Router);
   private loginUrl = 'http://localhost:3000/auth/login';
   private registerUrl = 'http://localhost:3000/auth/registerUser';
+  private logoutUrl = 'http://localhost:3000/auth/logout';
   login(email: string, password: string) {
-    return this.http
-      .post<{
-        message: string;
-        token: string;
-      }>(this.loginUrl, { email, password })
-      .pipe(map((response) => response.token));
+    return this.http.post<{
+      message: string;
+    }>(this.loginUrl, { email, password });
   }
   register(name: string, email: string, password: string) {
     return this.http.post<{ message: string }>(this.registerUrl, {
@@ -26,18 +24,20 @@ export class AuthService {
       password,
     });
   }
-  saveToken(token: string) {
-    localStorage.setItem('jwt_token', token);
-  }
-  getToken() {
-    return localStorage.getItem('jwt_token');
-  }
+
   isLoggedIn(): boolean {
-    return !!localStorage.getItem('jwt_token');
+    return !!localStorage.getItem('userEmail');
   }
   logout() {
-    localStorage.removeItem('jwt_token');
-    localStorage.removeItem('userEmail');
-    this.router.navigate(['/login']);
+    return this.http.post<{ message: string }>(this.logoutUrl, {}).subscribe({
+      next: () => {
+        localStorage.removeItem('userEmail');
+        this.router.navigate(['/login']);
+      },
+      error: (err) => {
+        localStorage.removeItem('userEmail');
+        this.router.navigate(['/login']);
+      },
+    });
   }
 }

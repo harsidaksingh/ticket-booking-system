@@ -1,62 +1,95 @@
-const oracledb = require("oracledb")
-const bcrypt = require("bcrypt")
-const userRepo = require("../repos/userRepo")
-const jwt = require("jsonwebtoken")
-const AppError = require('../utils/AppError');
+const oracledb = require("oracledb");
+const bcrypt = require("bcrypt");
+const userRepo = require("../repos/userRepo");
+const jwt = require("jsonwebtoken");
+const AppError = require("../utils/AppError");
+const { getClient } = require("../config/redis");
+const crypto = require("crypto");
 
-const registerUser = async (name,email,password) => {
-    let connection;
-    try{
-        connection = await oracledb.getConnection("oracleDB");
-        const saltRounds = 10;
-        const hashedPassword = await bcrypt.hash(password,saltRounds);
-        await userRepo.createUser(connection,name,email,hashedPassword);
-        await connection.commit();
-        console.log("User Created");
-    }catch(error){ 
-        if(connection)  await connection.rollback()
-        console.error(` User registration failed: ${error.message}`);
-        throw error;
-    }finally{
-        if (connection) {
-            await connection.close();
-            console.log('🔌 DB Connection Closed');
-        }
+const registerUser = async (name, email, password) => {
+  let connection;
+  try {
+    connection = await oracledb.getConnection("oracleDB");
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    await userRepo.createUser(connection, name, email, hashedPassword);
+    await connection.commit();
+    console.log("User Created");
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error(` User registration failed: ${error.message}`);
+    throw error;
+  } finally {
+    if (connection) {
+      await connection.close();
+      console.log("🔌 DB Connection Closed");
     }
-}
+  }
+};
 
-const loginUser = async (email,password) => {
-    let connection;
-    try{
-        connection = await oracledb.getConnection("oracleDB");
-        const user = await userRepo.findUserByEmail(connection,email);
-        if(!user){
-             throw new AppError("Invalid Email or Password", 401);
-        }
-        const isMatch = await bcrypt.compare(password,user.PASSWORD);
-        if(isMatch){
-            const payload = {
-                name:user.NAME,
-                email:user.EMAIL
-            }
-            const token = jwt.sign(payload,process.env.JWT_SECRET || "do_not_use_in_prod",{expiresIn:'30min'})
-            return token;
-        }else{
-            throw new AppError("Invalid Password", 401);
-        }
-        
-    }catch(error){ 
-        if(connection)  await connection.rollback()
-        console.error(` User Login failed: ${error.message}`);
-        throw error;
-    }finally{
-        if (connection) {
-            await connection.close();
-            console.log('🔌 DB Connection Closed');
-        }
+const loginUser = async (email, password) => {
+  let connection;
+  try {
+    connection = await oracledb.getConnection("oracleDB");
+    const user = await userRepo.findUserByEmail(email);
+    if (!user) {
+      throw new AppError("Invalid Email or Password", 401);
     }
-}
-
+    const isMatch = await bcrypt.compare(password, user.PASSWORD);
+    if (isMatch) {
+      const payload = {
+        name: user.NAME,
+        email: user.EMAIL,
+      };
+      const token = jwt.sign(
+        payload,
+        process.env.JWT_SECRET || "do_not_use_in_prod",
+        { expiresIn: "30min" },
+      );
+      const refreshToken = crypto.randomUUID();
+      const client = getClient();
+      const key = `refresh_token:${refreshToken}`;
+      await client.setEx(key, 604800, user.EMAIL);
+      return { accessToken: token, refreshToken: refreshToken };
+    } else {
+      throw new AppError("Invalid Password", 401);
+    }
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error(` User Login failed: ${error.message}`);
+    throw error;
+  } finally {
+    if (connection) {
+      await connection.close();
+      console.log("🔌 DB Connection Closed");
+    }
+  }
+};
+const refreshUserToken = async (refreshToken) => {
+  try {
+    const client = getClient();
+    const email = await client.get(`refresh_token:${refreshToken}`);
+    if (!email) throw new AppError("Forbidden", 403);
+    const user = await userRepo.findUserByEmail(email);
+    if (!user) {
+      throw new AppError("Invalid Email or Password", 401);
+    }
+    const payload = {
+      name: user.NAME,
+      email: user.EMAIL,
+    };
+    const token = jwt.sign(
+      payload,
+      process.env.JWT_SECRET || "do_not_use_in_prod",
+      { expiresIn: "30min" },
+    );
+    return token;
+  } catch (error) {
+    throw error;
+  }
+};
 module.exports = {
-    registerUser,loginUser
-}
+  registerUser,
+  loginUser,
+  refreshUserToken,
+};

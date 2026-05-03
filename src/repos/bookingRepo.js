@@ -117,7 +117,7 @@ const invalidateCache = async (eventId) => {
     logger.error("Redis Invalidation Failed", e);
   }
 };
-const insertOrder = async (eventId, userEmail) => {
+const insertOrder = async (eventId, userEmail, seatIds, reqId) => {
   let connection;
   try {
     connection = await oracledb.getConnection("oracleDB");
@@ -128,11 +128,26 @@ const insertOrder = async (eventId, userEmail) => {
         userEmail,
         id: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT },
       },
-      { autoCommit: true },
+      { autoCommit: false },
     );
     logger.info("Order created Successfully");
+    const payload = {
+      eventId,
+      userEmail,
+      orderId: res.outBinds.id[0],
+      seatIds,
+      reqId,
+    };
+    await connection.execute(
+      `insert into outbox_events(payload) Values (:payload)`,
+      { payload: JSON.stringify(payload) },
+      { autoCommit: false },
+    );
+    logger.info("Payload Inserted in outbox");
+    await connection.commit();
     return res.outBinds.id[0];
   } catch (error) {
+    await connection.rollback();
     logger.error(`Error in order creation ${error}`);
     throw error;
   } finally {
@@ -150,6 +165,38 @@ const updateOrder = async (orderId, status) => {
     );
   } catch (error) {
     logger.error("Error in orderUpdate");
+    throw error;
+  } finally {
+    await connection.close();
+  }
+};
+const getPendingOutboxEvents = async () => {
+  let connection;
+  try {
+    connection = await oracledb.getConnection("oracleDB");
+    const res = await connection.execute(
+      `select * from outbox_events where status = 'PENDING' FETCH NEXT 50 ROWS ONLY `,
+      {},
+      { outFormat: oracledb.OUT_FORMAT_OBJECT },
+    );
+    return res.rows;
+  } catch (error) {
+    throw error;
+  } finally {
+    await connection.close();
+  }
+};
+const markOutboxEventsPublished = async (id) => {
+  let connection;
+  try {
+    connection = await oracledb.getConnection("oracleDB");
+    await connection.execute(
+      `update outbox_events set status = 'PUBLISHED' where id = :id `,
+      { id },
+      { autoCommit: true },
+    );
+  } catch (error) {
+    throw error;
   } finally {
     await connection.close();
   }
@@ -161,4 +208,6 @@ module.exports = {
   releaseExpireSeats,
   insertOrder,
   updateOrder,
+  getPendingOutboxEvents,
+  markOutboxEventsPublished,
 };

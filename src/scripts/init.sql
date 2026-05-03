@@ -44,3 +44,9 @@ create table order_items(
     constraint fk_order_id FOREIGN Key(order_id) REFERENCES orders(id),
     CONSTRAINT fk_booking_seat FOREIGN KEY (seat_id) REFERENCES seats(id)
 )
+create table outbox_events(
+    id number generated always as identity primary key,
+    payload varchar2(4000) not null,
+    status varchar2(20) default 'PENDING',
+    created_at timestamp default current_timestamp
+);

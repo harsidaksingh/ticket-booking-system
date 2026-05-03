@@ -93,8 +93,7 @@ export class LoginComponent {
       };
 
       this.authService.login(email, password).subscribe({
-        next: (token: string) => {
-          this.authService.saveToken(token);
+        next: () => {
           localStorage.setItem('userEmail', email);
           this.toastService.show('Successfully logged in!', 'success');
           this.router.navigateByUrl(this.url!);

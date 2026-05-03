@@ -16,9 +16,12 @@ const createBooking = async (req, res) => {
   const reqId = crypto.randomUUID();
 
   await client.set("booking:" + reqId, "PENDING");
-  const orderId = await bookingService.createOrder(eventId, userEmail);
-  await publishToQueue({ eventId, seatIds, userEmail, reqId, orderId });
-  logger.info(`RabbitMQ: Sent booking request ${reqId} to queue`);
+  const orderId = await bookingService.createOrder(
+    eventId,
+    userEmail,
+    seatIds,
+    reqId,
+  );
   // 4. Return "Accepted" (202) immediately
   return res.status(202).json({
     message: "Booking request received. Processing in background.",

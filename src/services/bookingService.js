@@ -39,9 +39,14 @@ const createBooking = async (eventId, seatIds, userEmail, orderId) => {
     }
   }
 };
-const createOrder = async (eventId, userEmail) => {
+const createOrder = async (eventId, userEmail, seatIds, reqId) => {
   try {
-    const orderId = await bookingRepo.insertOrder(eventId, userEmail);
+    const orderId = await bookingRepo.insertOrder(
+      eventId,
+      userEmail,
+      seatIds,
+      reqId,
+    );
     return orderId;
   } catch (error) {
     logger.error(`Error in createOrder ${error}`);

@@ -3,8 +3,7 @@ const logger = require("../config/logger");
 
 const authToken = async (req, res, next) => {
   try {
-    const authHeader = req.headers["authorization"];
-    const token = authHeader?.split(" ")[1];
+    const token = req.cookies.jwt_token;
     if (!token) {
       logger.error("Access Denied: No Token Provided");
       return res.status(401).json({
