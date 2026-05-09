@@ -1,6 +1,6 @@
 const bookingService = require("../services/bookingService");
 const { publishToQueue } = require("../config/rabbitmq");
-const { getClient } = require("../config/redis");
+const { getClient, getSubClient } = require("../config/redis");
 const crypto = require("crypto");
 const logger = require("../config/logger");
 
@@ -49,8 +49,39 @@ const getBookingStatus = async (req, res) => {
   return res.status(200).json({ reqId, status });
 };
 
+const getBookingStatusStream = async (req, res) => {
+  const reqId = req.params.reqId;
+  const client = getClient();
+  const subClient = getSubClient();
+  const channel = "booking:" + reqId;
+
+  console.log(`SSE Client connected for booking: ${reqId}`);
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    Connection: "keep-alive",
+  });
+
+  const status = await client.get(channel);
+  if (status !== "PENDING") {
+    res.write(`data: ${JSON.stringify({ status: status })}\n\n`);
+    return res.end();
+  }
+  const listener = async (message) => {
+    logger.info(`Sending SSE update: ${message}`);
+    res.write(`data: ${JSON.stringify({ status: message })}\n\n`);
+    res.end();
+    await subClient.unsubscribe(channel, listener);
+  };
+  await subClient.subscribe(channel, listener);
+  req.on("close", async () => {
+    await subClient.unsubscribe(channel, listener);
+  });
+};
+
 module.exports = {
   createBooking,
   reserve,
   getBookingStatus,
+  getBookingStatusStream,
 };

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { interval, switchMap, takeWhile } from 'rxjs';
 import { BookingService } from '../../core/services/booking.service';
 import { Router } from '@angular/router';
@@ -83,6 +83,7 @@ import { RouterLink } from '@angular/router';
 export class CheckoutComponent implements OnInit {
   private bookingService = inject(BookingService);
   private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
   reqId: string = '';
   bookingStatus: string = 'PENDING';
   eventId!: number;
@@ -99,16 +100,16 @@ export class CheckoutComponent implements OnInit {
     this.bookingService.confirmBooking(this.eventId, this.seatIds).subscribe({
       next: (data) => {
         this.reqId = data.reqId;
-        interval(2000)
-          .pipe(
-            switchMap(() => this.bookingService.getBookingStatus(this.reqId)),
-            takeWhile((response) => response.status === 'PENDING', true),
-          )
-          .subscribe({
-            next: (pollingData) => {
-              this.bookingStatus = pollingData.status;
-            },
-          });
+        this.bookingService.getBookingStatusStream(this.reqId).subscribe({
+          next: (streamData) => {
+            console.log('Got SSE Update:', streamData);
+            this.bookingStatus = streamData.status;
+            this.cdr.detectChanges();
+          },
+          error: (err) => {
+            console.error('SSE Connection failed', err);
+          },
+        });
       },
       error: (err) => {
         console.error('Failed to create booking', err);

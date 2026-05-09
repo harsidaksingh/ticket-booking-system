@@ -22,9 +22,11 @@ async function startWorker() {
       );
       logger.info("✅ Booking Successful!");
       await client.set("booking:" + data.reqId, "CONFIRMED");
+      await client.publish("booking:" + data.reqId, "CONFIRMED");
     } catch (error) {
       logger.error(`❌ Booking Failed: ${error.message}`);
       await client.set("booking:" + data.reqId, "FAILED");
+      await client.publish("booking:" + data.reqId, "FAILED");
     }
   });
 }
