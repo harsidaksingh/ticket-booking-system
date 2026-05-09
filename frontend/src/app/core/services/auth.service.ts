@@ -12,6 +12,7 @@ export class AuthService {
   private loginUrl = 'http://localhost:3000/auth/login';
   private registerUrl = 'http://localhost:3000/auth/registerUser';
   private logoutUrl = 'http://localhost:3000/auth/logout';
+  private refreshUrl = 'http://localhost:3000/auth/refresh';
   login(email: string, password: string) {
     return this.http.post<{
       message: string;
@@ -39,5 +40,8 @@ export class AuthService {
         this.router.navigate(['/login']);
       },
     });
+  }
+  refreshToken() {
+    return this.http.post(this.refreshUrl, {});
   }
 }
