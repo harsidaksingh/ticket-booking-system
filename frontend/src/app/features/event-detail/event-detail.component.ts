@@ -1,10 +1,17 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { EventService } from '../../core/services/event.service';
 import { TicketSeat } from '../../core/models/seat.model';
 import { BookingService } from '../../core/services/booking.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
+import { SocketService } from '../../core/services/socket.services';
 
 @Component({
   selector: 'app-eventDetail',
@@ -108,11 +115,14 @@ export class EventDetailComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
   private toastService = inject(ToastService);
+  private socketServie = inject(SocketService);
+  private cdr = inject(ChangeDetectorRef);
   isLoading: boolean = true;
   seats: TicketSeat[] = [];
   selectedSeatId = signal<number[]>([]);
   ngOnInit() {
     const id = this.activatedRoute.snapshot.paramMap.get('id');
+    this.socketServie.joinEvent(Number(id));
     this.eventService.getSeats(Number(id)).subscribe({
       next: (data) => {
         this.seats = data;
@@ -123,6 +133,18 @@ export class EventDetailComponent implements OnInit {
         this.isLoading = false;
       },
     });
+    this.socketServie.onSeatUpdate().subscribe({
+      next: (data) => {
+        this.seats = this.seats.map((seat) =>
+          seat.id === data.seatId ? { ...seat, status: data.status } : seat,
+        );
+        this.cdr.detectChanges();
+      },
+    });
+  }
+  ngOnDestroy() {
+    const id = this.activatedRoute.snapshot.paramMap.get('id');
+    this.socketServie.leaveEvent(Number(id));
   }
   selectSeat(id: number) {
     if (this.selectedSeatId().includes(id)) {

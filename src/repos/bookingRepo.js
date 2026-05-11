@@ -6,7 +6,7 @@ const bookQuery = `insert into order_items (order_id,seat_id) values(:orderId,:s
 const getSeatQuery = `select * from seats where id = :seatId`;
 const updateSeatQueryWithVersion = `update seats set status=2, version=version+1 where id = :seatId and status IN (0,1) and version = :version`;
 const reserveQuery = `update seats set status = 1,hold_id=:userId,expires_at= SYSDATE+interval '4' minute where id=:seatId and status = 0`;
-const releaseQuery = `UPDATE seats SET status = 0, hold_id = NULL, expires_at = NULL,version=version+1 WHERE status = 1 AND expires_at < SYSDATE RETURNING event_id INTO :event_ids`;
+const releaseQuery = `UPDATE seats SET status = 0, hold_id = NULL, expires_at = NULL,version=version+1 WHERE status = 1 AND expires_at < SYSDATE RETURNING id, event_id INTO :seat_ids, :event_ids`;
 
 const getSeat = async (seatId) => {
   let connection;
@@ -56,6 +56,10 @@ const updateSeatWithVersion = async (
       { autoCommit: false },
     );
     await invalidateCache(eventId);
+    await getClient().publish(
+      "seat-updates",
+      JSON.stringify({ eventId, seatId, status: 2 }),
+    );
     logger.info("Booking query executed");
   } catch (error) {
     logger.error(`Error in bookingRepo ${error}`);
@@ -75,6 +79,10 @@ const reserveSeat = async (connection, eventId, seatId, userId) => {
       throw new AppError("Seat Already Taken", 409);
     }
     await invalidateCache(eventId);
+    await getClient().publish(
+      "seat-updates",
+      JSON.stringify({ eventId, seatId, status: 1 }),
+    );
   } catch (error) {
     logger.error(`Error in reserve seat ${error}`);
     throw error;
@@ -87,14 +95,28 @@ const releaseExpireSeats = async () => {
     connection = await oracledb.getConnection("oracleDB");
     const res = await connection.execute(
       releaseQuery,
-      { event_ids: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT } },
+      {
+        event_ids: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT },
+        seat_ids: { type: oracledb.NUMBER, dir: oracledb.BIND_OUT },
+      },
       { autoCommit: true },
     );
     if (res.rowsAffected > 0) {
       const eventIds = res.outBinds.event_ids;
+      const seatIds = res.outBinds.seat_ids;
       const uniqueEvents = [...new Set(eventIds)];
       for (const eid of uniqueEvents) {
         await invalidateCache(eid);
+      }
+      for (let i = 0; i < seatIds.length; i++) {
+        await getClient().publish(
+          "seat-updates",
+          JSON.stringify({
+            eventId: eventIds[i],
+            seatId: seatIds[i],
+            status: 0,
+          }),
+        );
       }
       logger.info(
         `♻️ Released ${res.rowsAffected} seats. Invalidated ${uniqueEvents.length} events.`,
